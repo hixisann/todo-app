@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <!-- 文字エンコーディングをUTF-8に設定（日本語対応） -->
+  <meta charset="UTF-8" />
+  <!-- スマートフォンでも適切に表示されるようビューポートを設定 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Todoアプリ</title>
+  <!-- スタイルシートの読み込み -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- アプリ全体を囲むコンテナ -->
+  <div class="container">
+
+    <!-- アプリのタイトル -->
+    <h1>Todoアプリ</h1>
+
+    <!-- タスク入力エリア -->
+    <div class="input-area">
+      <!-- タスク名を入力するテキストフィールド -->
+      <input
+        type="text"
+        id="todo-input"
+        placeholder="タスクを入力してください"
+        maxlength="100"
+      />
+      <!-- タスクを追加するボタン -->
+      <button id="add-btn">追加</button>
+    </div>
+
+    <!-- フィルターボタンエリア（全件・未完了・完了済みの切り替え） -->
+    <div class="filter-area">
+      <button class="filter-btn active" data-filter="all">すべて</button>
+      <button class="filter-btn" data-filter="active">未完了</button>
+      <button class="filter-btn" data-filter="completed">完了済み</button>
+    </div>
+
+    <!-- タスク一覧を表示するリスト -->
+    <ul id="todo-list"></ul>
+
+    <!-- タスクが0件のときに表示するメッセージ -->
+    <p id="empty-message" class="empty-message">タスクがありません</p>
+
+    <!-- フッター：残タスク数と完了済み削除ボタン -->
+    <div class="footer">
+      <!-- 未完了タスクの件数を表示 -->
+      <span id="remaining-count">残り 0 件</span>
+      <!-- 完了済みタスクをまとめて削除するボタン -->
+      <button id="clear-completed-btn">完了済みを削除</button>
+    </div>
+
+  </div>
+
+  <!-- JavaScriptファイルの読み込み（DOMが構築されてから実行されるよう末尾に配置） -->
+  <script src="app.js"></script>
+</body>
+</html>
