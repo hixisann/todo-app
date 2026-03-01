@@ -102,7 +102,7 @@ async function clearCompleted() {
 // ===========================
 
 function translateAuthError(message) {
-  if (message.includes('Invalid login credentials'))        return 'メールアドレスまたはパスワードが正しくありません';
+  if (message.includes('Invalid login credentials'))        return 'メールアドレスまたはパスワードが正しくありません。未登録の場合は新規登録をお試しください';
   if (message.includes('Email not confirmed'))              return 'メールアドレスが確認されていません';
   if (message.includes('User already registered'))          return 'このメールアドレスはすでに登録されています';
   if (message.includes('Password should be at least'))      return 'パスワードは6文字以上で入力してください';
@@ -115,15 +115,21 @@ function translateAuthError(message) {
 }
 
 async function login() {
-  const email = document.getElementById('auth-email').value;
+  const email = document.getElementById('auth-email').value.trim();
   const password = document.getElementById('auth-password').value;
+  if (!email && !password) { authMessage.textContent = 'メールアドレスとパスワードを入力してください'; return; }
+  if (!email)    { authMessage.textContent = 'メールアドレスを入力してください'; return; }
+  if (!password) { authMessage.textContent = 'パスワードを入力してください'; return; }
   const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
   if (error) { authMessage.textContent = translateAuthError(error.message); }
 }
 
 async function signup() {
-  const email = document.getElementById('auth-email').value;
+  const email = document.getElementById('auth-email').value.trim();
   const password = document.getElementById('auth-password').value;
+  if (!email && !password) { authMessage.textContent = 'メールアドレスとパスワードを入力してください'; return; }
+  if (!email)    { authMessage.textContent = 'メールアドレスを入力してください'; return; }
+  if (!password) { authMessage.textContent = 'パスワードを入力してください'; return; }
   const { error } = await supabaseClient.auth.signUp({ email, password });
   if (error) {
     authMessage.textContent = translateAuthError(error.message);

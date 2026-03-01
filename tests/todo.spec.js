@@ -64,11 +64,38 @@ test.describe('認証・ログイン系', () => {
     await expect(page.locator('#auth-message')).not.toBeEmpty();
   });
 
-  test('空のフォームではログインできない', async ({ page }) => {
+  test('両方空でログインできない', async ({ page }) => {
     await clearSession(page);
     await page.click('#login-btn');
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(500);
     await expect(page.locator('#auth-container')).toBeVisible();
+    await expect(page.locator('#auth-message')).toHaveText('メールアドレスとパスワードを入力してください');
+  });
+
+  test('メールアドレスのみ空でログインできない', async ({ page }) => {
+    await clearSession(page);
+    await page.fill('#auth-password', PASSWORD);
+    await page.click('#login-btn');
+    await page.waitForTimeout(500);
+    await expect(page.locator('#auth-container')).toBeVisible();
+    await expect(page.locator('#auth-message')).toHaveText('メールアドレスを入力してください');
+  });
+
+  test('パスワードのみ空でログインできない', async ({ page }) => {
+    await clearSession(page);
+    await page.fill('#auth-email', EMAIL);
+    await page.click('#login-btn');
+    await page.waitForTimeout(500);
+    await expect(page.locator('#auth-container')).toBeVisible();
+    await expect(page.locator('#auth-message')).toHaveText('パスワードを入力してください');
+  });
+
+  test('両方空で新規登録できない', async ({ page }) => {
+    await clearSession(page);
+    await page.click('#signup-btn');
+    await page.waitForTimeout(500);
+    await expect(page.locator('#auth-container')).toBeVisible();
+    await expect(page.locator('#auth-message')).toHaveText('メールアドレスとパスワードを入力してください');
   });
 
   test('ログアウトするとログイン画面に戻る', async ({ page }) => {
