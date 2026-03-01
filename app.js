@@ -20,6 +20,7 @@ let currentUser = null;
 
 const todoInput = document.getElementById('todo-input');
 const todoNote = document.getElementById('todo-note');
+const todoDeadline = document.getElementById('todo-deadline');
 const addBtn = document.getElementById('add-btn');
 const todoList = document.getElementById('todo-list');
 const emptyMessage = document.getElementById('empty-message');
@@ -50,14 +51,16 @@ async function addTodo() {
   if (!text) return;
 
   const note = todoNote.value.trim();
+  const deadline = todoDeadline.value || null;
 
   const { error } = await supabaseClient
     .from('todos')
-    .insert({ text, note, completed: false, user_id: currentUser.id });
+    .insert({ text, note, deadline, completed: false, user_id: currentUser.id });
   if (error) { console.error(error); return; }
 
   todoInput.value = '';
   todoNote.value = '';
+  todoDeadline.value = '';
   await loadTodos();
 }
 
@@ -145,6 +148,7 @@ async function logout() {
 function showApp() {
   document.getElementById('auth-container').style.display = 'none';
   document.getElementById('app-container').style.display = 'block';
+  todoDeadline.min = new Date().toISOString().split('T')[0];
   loadTodos();
 }
 
@@ -192,6 +196,15 @@ function render() {
     span.className = 'todo-text';
     span.textContent = todo.text;
     content.appendChild(span);
+
+    if (todo.deadline) {
+      const today = new Date().toISOString().split('T')[0];
+      const [y, m, d] = todo.deadline.split('-');
+      const deadlineSpan = document.createElement('span');
+      deadlineSpan.className = 'todo-deadline';
+      deadlineSpan.textContent = `期限: ${y}/${m}/${d}` + (todo.deadline <= today ? ' 🔥' : '');
+      content.appendChild(deadlineSpan);
+    }
 
     if (todo.note) {
       const noteP = document.createElement('p');

@@ -399,6 +399,120 @@ test.describe('備考機能', () => {
 });
 
 // ===========================
+// 期限日機能
+// ===========================
+
+test.describe('期限日機能', () => {
+  test.beforeAll(async ({ browser }) => {
+    const page = await browser.newPage();
+    await page.goto('/');
+    await page.evaluate(() => localStorage.clear());
+    await page.reload();
+    await page.waitForTimeout(500);
+    await page.fill('#auth-email', EMAIL);
+    await page.fill('#auth-password', PASSWORD);
+    await page.click('#signup-btn');
+    await page.waitForTimeout(2000);
+    await page.close();
+  });
+
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/');
+    await page.evaluate(() => localStorage.clear());
+    await page.reload();
+    await page.waitForTimeout(500);
+    await page.fill('#auth-email', EMAIL);
+    await page.fill('#auth-password', PASSWORD);
+    await page.click('#login-btn');
+    await page.waitForSelector('#app-container', { state: 'visible', timeout: 10000 });
+    await page.evaluate(async () => {
+      const { data } = await supabaseClient.from('todos').select('id');
+      if (data && data.length > 0) {
+        await supabaseClient.from('todos').delete().in('id', data.map(t => t.id));
+      }
+      await loadTodos();
+    });
+    await page.waitForTimeout(500);
+  });
+
+  test.afterEach(async ({ page }) => {
+    if (await page.locator('#logout-btn').isVisible()) {
+      await page.click('#logout-btn');
+      await page.waitForSelector('#auth-container', { state: 'visible', timeout: 5000 });
+    }
+  });
+
+  test('期限日付きTodoを追加できる', async ({ page }) => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const dateStr = tomorrow.toISOString().split('T')[0];
+    const [y, m, d] = dateStr.split('-');
+    await page.fill('#todo-input', '期限日テスト');
+    await page.fill('#todo-deadline', dateStr);
+    await page.click('#add-btn');
+    await page.waitForSelector('.todo-item', { timeout: 10000 });
+    await expect(page.locator('.todo-deadline')).toBeVisible();
+    await expect(page.locator('.todo-deadline')).toContainText(`期限: ${y}/${m}/${d}`);
+  });
+
+  test('期限日なしTodoには期限日が表示されない', async ({ page }) => {
+    await page.fill('#todo-input', '期限なしタスク');
+    await page.click('#add-btn');
+    await page.waitForSelector('.todo-item', { timeout: 10000 });
+    await expect(page.locator('.todo-item .todo-deadline')).toHaveCount(0);
+  });
+
+  test('追加後に期限日フィールドが空になる', async ({ page }) => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const dateStr = tomorrow.toISOString().split('T')[0];
+    await page.fill('#todo-input', 'クリアテスト');
+    await page.fill('#todo-deadline', dateStr);
+    await page.click('#add-btn');
+    await page.waitForSelector('.todo-item', { timeout: 10000 });
+    await expect(page.locator('#todo-deadline')).toHaveValue('');
+  });
+
+  test('期限が過ぎたTodoに🔥が表示される', async ({ page }) => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const pastDate = yesterday.toISOString().split('T')[0];
+    await page.evaluate(async (deadline) => {
+      const { data: { user } } = await supabaseClient.auth.getUser();
+      await supabaseClient.from('todos').insert({
+        text: '期限切れタスク',
+        deadline,
+        completed: false,
+        user_id: user.id
+      });
+      await loadTodos();
+    }, pastDate);
+    await page.waitForSelector('.todo-item', { timeout: 10000 });
+    await expect(page.locator('.todo-deadline')).toContainText('🔥');
+  });
+
+  test('期限日入力欄に過去の日付を入力できないよう制限されている', async ({ page }) => {
+    const today = new Date().toISOString().split('T')[0];
+    const minAttr = await page.locator('#todo-deadline').getAttribute('min');
+    expect(minAttr).toBe(today);
+  });
+
+  test('期限日付きTodoを完了にすると期限日に取り消し線が入る', async ({ page }) => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const dateStr = tomorrow.toISOString().split('T')[0];
+    await page.fill('#todo-input', '完了期限テスト');
+    await page.fill('#todo-deadline', dateStr);
+    await page.click('#add-btn');
+    await page.waitForSelector('.todo-item', { timeout: 10000 });
+    await page.click('.todo-item input[type="checkbox"]');
+    await page.waitForTimeout(1000);
+    await expect(page.locator('.todo-item')).toHaveClass(/completed/);
+    await expect(page.locator('.todo-item .todo-deadline')).toBeVisible();
+  });
+});
+
+// ===========================
 // SQLインジェクション対策
 // ===========================
 
