@@ -19,6 +19,7 @@ let currentUser = null;
 // ===========================
 
 const todoInput = document.getElementById('todo-input');
+const todoNote = document.getElementById('todo-note');
 const addBtn = document.getElementById('add-btn');
 const todoList = document.getElementById('todo-list');
 const emptyMessage = document.getElementById('empty-message');
@@ -48,12 +49,15 @@ async function addTodo() {
   const text = todoInput.value.trim();
   if (!text) return;
 
+  const note = todoNote.value.trim();
+
   const { error } = await supabaseClient
     .from('todos')
-    .insert({ text, completed: false, user_id: currentUser.id });
+    .insert({ text, note, completed: false, user_id: currentUser.id });
   if (error) { console.error(error); return; }
 
   todoInput.value = '';
+  todoNote.value = '';
   await loadTodos();
 }
 
@@ -97,11 +101,24 @@ async function clearCompleted() {
 // 認証
 // ===========================
 
+function translateAuthError(message) {
+  if (message.includes('Invalid login credentials'))        return 'メールアドレスまたはパスワードが正しくありません';
+  if (message.includes('Email not confirmed'))              return 'メールアドレスが確認されていません';
+  if (message.includes('User already registered'))          return 'このメールアドレスはすでに登録されています';
+  if (message.includes('Password should be at least'))      return 'パスワードは6文字以上で入力してください';
+  if (message.includes('invalid format') ||
+      message.includes('Unable to validate email'))         return 'メールアドレスの形式が正しくありません';
+  if (message.includes('Email rate limit exceeded'))        return 'メール送信の上限を超えました。しばらく経ってから再試行してください';
+  if (message.includes('only request this after'))          return 'セキュリティのため、しばらく経ってから再試行してください';
+  if (message.includes('signup is disabled'))               return '現在、新規登録は受け付けていません';
+  return 'エラーが発生しました。しばらく経ってから再試行してください';
+}
+
 async function login() {
   const email = document.getElementById('auth-email').value;
   const password = document.getElementById('auth-password').value;
   const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-  if (error) { authMessage.textContent = error.message; }
+  if (error) { authMessage.textContent = translateAuthError(error.message); }
 }
 
 async function signup() {
@@ -109,7 +126,7 @@ async function signup() {
   const password = document.getElementById('auth-password').value;
   const { error } = await supabaseClient.auth.signUp({ email, password });
   if (error) {
-    authMessage.textContent = error.message;
+    authMessage.textContent = translateAuthError(error.message);
   } else {
     authMessage.textContent = '登録しました。ログインしてください。';
   }
@@ -162,9 +179,20 @@ function render() {
     checkbox.checked = todo.completed;
     checkbox.addEventListener('change', () => toggleTodo(todo.id));
 
+    const content = document.createElement('div');
+    content.className = 'todo-content';
+
     const span = document.createElement('span');
     span.className = 'todo-text';
     span.textContent = todo.text;
+    content.appendChild(span);
+
+    if (todo.note) {
+      const noteP = document.createElement('p');
+      noteP.className = 'todo-note';
+      noteP.textContent = todo.note;
+      content.appendChild(noteP);
+    }
 
     const deleteBtn = document.createElement('button');
     deleteBtn.className = 'delete-btn';
@@ -173,7 +201,7 @@ function render() {
     deleteBtn.addEventListener('click', () => deleteTodo(todo.id));
 
     li.appendChild(checkbox);
-    li.appendChild(span);
+    li.appendChild(content);
     li.appendChild(deleteBtn);
     todoList.appendChild(li);
   });

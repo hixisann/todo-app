@@ -282,6 +282,96 @@ test.describe('ボタン動作・Todo操作', () => {
 });
 
 // ===========================
+// 備考機能
+// ===========================
+
+test.describe('備考機能', () => {
+  test.beforeAll(async ({ browser }) => {
+    const page = await browser.newPage();
+    await page.goto('/');
+    await page.evaluate(() => localStorage.clear());
+    await page.reload();
+    await page.waitForTimeout(500);
+    await page.fill('#auth-email', EMAIL);
+    await page.fill('#auth-password', PASSWORD);
+    await page.click('#signup-btn');
+    await page.waitForTimeout(2000);
+    await page.close();
+  });
+
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/');
+    await page.evaluate(() => localStorage.clear());
+    await page.reload();
+    await page.waitForTimeout(500);
+    await page.fill('#auth-email', EMAIL);
+    await page.fill('#auth-password', PASSWORD);
+    await page.click('#login-btn');
+    await page.waitForSelector('#app-container', { state: 'visible', timeout: 10000 });
+    await page.evaluate(async () => {
+      const { data } = await supabaseClient.from('todos').select('id');
+      if (data && data.length > 0) {
+        await supabaseClient.from('todos').delete().in('id', data.map(t => t.id));
+      }
+      await loadTodos();
+    });
+    await page.waitForTimeout(500);
+  });
+
+  test.afterEach(async ({ page }) => {
+    if (await page.locator('#logout-btn').isVisible()) {
+      await page.click('#logout-btn');
+      await page.waitForSelector('#auth-container', { state: 'visible', timeout: 5000 });
+    }
+  });
+
+  test('備考付きTodoを追加できる', async ({ page }) => {
+    await page.fill('#todo-input', '備考テストタスク');
+    await page.fill('#todo-note', 'これは備考です');
+    await page.click('#add-btn');
+    await page.waitForSelector('.todo-item', { timeout: 10000 });
+    await expect(page.locator('.todo-text')).toHaveText('備考テストタスク');
+    await expect(page.locator('.todo-note')).toHaveText('これは備考です');
+  });
+
+  test('備考なしTodoには備考が表示されない', async ({ page }) => {
+    await page.fill('#todo-input', '備考なしタスク');
+    await page.click('#add-btn');
+    await page.waitForSelector('.todo-item', { timeout: 10000 });
+    await expect(page.locator('.todo-item .todo-note')).toHaveCount(0);
+  });
+
+  test('追加後に備考フィールドが空になる', async ({ page }) => {
+    await page.fill('#todo-input', 'クリアテスト');
+    await page.fill('#todo-note', '備考テキスト');
+    await page.click('#add-btn');
+    await page.waitForSelector('.todo-item', { timeout: 10000 });
+    await expect(page.locator('#todo-note')).toHaveValue('');
+  });
+
+  test('備考付きTodoを完了にすると備考にも取り消し線が入る', async ({ page }) => {
+    await page.fill('#todo-input', '完了備考テスト');
+    await page.fill('#todo-note', '完了する備考');
+    await page.click('#add-btn');
+    await page.waitForSelector('.todo-item', { timeout: 10000 });
+    await page.click('.todo-item input[type="checkbox"]');
+    await page.waitForTimeout(1000);
+    await expect(page.locator('.todo-item')).toHaveClass(/completed/);
+    await expect(page.locator('.todo-item .todo-note')).toBeVisible();
+  });
+
+  test('備考に改行を含む文字列を入力できる', async ({ page }) => {
+    await page.fill('#todo-input', '改行テスト');
+    await page.fill('#todo-note', '1行目\n2行目');
+    await page.click('#add-btn');
+    await page.waitForSelector('.todo-item', { timeout: 10000 });
+    await expect(page.locator('.todo-note')).toBeVisible();
+    await expect(page.locator('.todo-note')).toContainText('1行目');
+    await expect(page.locator('.todo-note')).toContainText('2行目');
+  });
+});
+
+// ===========================
 // SQLインジェクション対策
 // ===========================
 

@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Todoアプリ</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -30,13 +31,16 @@
 
     <!-- タスク入力エリア -->
     <div class="input-area">
-      <input
-        type="text"
-        id="todo-input"
-        placeholder="タスクを入力してください"
-        maxlength="100"
-      />
-      <button id="add-btn">追加</button>
+      <div class="input-row">
+        <input
+          type="text"
+          id="todo-input"
+          placeholder="タスクを入力してください"
+          maxlength="100"
+        />
+        <button id="add-btn">追加</button>
+      </div>
+      <textarea id="todo-note" placeholder="備考（任意）"></textarea>
     </div>
 
     <!-- フィルターボタンエリア -->
